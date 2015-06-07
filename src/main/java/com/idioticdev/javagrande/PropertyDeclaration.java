@@ -44,7 +44,8 @@ public final class PropertyDeclaration extends BodyDeclaration implements Docume
 	@Override
 	public <A> void accept(VoidVisitor<A> v, A arg)
 	{
-		((CodeVisitor<A>) v).visit (this, arg);
+		if (v instanceof CodeVisitor)
+			((CodeVisitor<A>) v).visit (this, arg);
 	}
 
 	public Type getType() {

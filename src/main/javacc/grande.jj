@@ -1549,7 +1549,7 @@ PropertyDeclaration PropertyDeclaration():
     List<Parameter> parameters = new LinkedList<Parameter> ();
     parameters.add (new Parameter(line, column, token.endLine, token.endColumn, 0, null, type, false, setParameterName));
     MethodDeclaration setMethod = new MethodDeclaration(line, column, token.endLine, token.endColumn,
-      setModifiers.modifiers, null, null, type, "set"+Character.toUpperCase(name.charAt(0))+name.substring(1), parameters, 0, null, set);
+      setModifiers.modifiers, null, null, new VoidType(), "set"+Character.toUpperCase(name.charAt(0))+name.substring(1), parameters, 0, null, set);
 
     MethodDeclaration getMethod = new MethodDeclaration(line, column, token.endLine, token.endColumn,
       getModifiers.modifiers, null, null, type, "get"+Character.toUpperCase(name.charAt(0))+name.substring(1), null, 0, null, get);

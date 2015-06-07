@@ -17,6 +17,6 @@ define "JavaGrande" do
   manifest["Implementation-Vendor"] = COPYRIGHT
   compile.with 'com.github.javaparser:javaparser-core:jar:2.1.0'
   compile.from javacc(_('src/main/javacc'), :in_package=>'com.idioticdev.javagrande')
-  run.using :main => "com.idioticdev.javagrande.JavaGrande"
+  run.using :main => ["com.idioticdev.javagrande.JavaGrande", "Test.java"]
   package(:jar)
 end

@@ -6,6 +6,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
+import javax.tools.JavaCompiler.CompilationTask;
+
 import com.github.javaparser.SourcesHelper;
 import com.github.javaparser.ast.CompilationUnit;
 
@@ -15,19 +23,38 @@ public class JavaGrande
 	{
 		try
 		{
-			// creates an input stream for the file to be parsed
-			FileInputStream in = new FileInputStream("Test.java");
+			List<JavaFileObject> compilationUnits = new LinkedList<> ();
+			List<String> options = new LinkedList<> ();
 
-			CompilationUnit cu;
-			try {
-				// parse the file
-				cu = parse (in);
-			} finally {
-				in.close();
+			for (String file : argv)
+			{
+				if (!file.endsWith (".java"))
+				{
+					options.add (file);
+					continue;
+				}
+
+				// creates an input stream for the file to be parsed
+				FileInputStream in = new FileInputStream(file);
+
+				CompilationUnit cu;
+				try {
+					// parse the file
+					cu = parse (in);
+				} finally {
+					in.close();
+				}
+				// prints the resulting compilation unit to default system output
+				CodeVisitor visitor = new CodeVisitor();
+				visitor.visit(cu, null);
+				visitor.transform ();
+
+				compilationUnits.add ((JavaFileObject) new JavaSourceFromString(file.substring (0, file.lastIndexOf (".")), cu.toString ()));
 			}
-			// prints the resulting compilation unit to default system output
-			// System.out.println(cu.toString());
-			new CodeVisitor().visit(cu, null);
+
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			CompilationTask task = compiler.getTask(null, null, null, options, null, compilationUnits);
+			task.call();
 		}
 		catch (IOException|ParseException e)
 		{
