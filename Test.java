@@ -16,4 +16,13 @@ public class Test
 	}
 
 	String defaultProp { get; set; }
+
+
+	public static void main ()
+	{
+		Test test = new Test ();
+		test.defaultProp = "test";
+
+		System.out.println (test.defaultProp);
+	}
 }
