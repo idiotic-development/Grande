@@ -23,56 +23,65 @@ public class JavaGrande
 {
 	public static void main (String[] argv)
 	{
-		try
+
+		List<JavaFileObject> compilationUnits = new LinkedList<> ();
+		List<String> options = new LinkedList<> ();
+
+		for (String file : argv)
 		{
-			List<JavaSource> compilationUnits = new LinkedList<> ();
-			List<String> options = new LinkedList<> ();
-
-			for (String file : argv)
+			// Collect options
+			if (!file.endsWith (".java"))
 			{
-				// Collect options
-				if (!file.endsWith (".java"))
-				{
-					options.add (file);
-					continue;
-				}
-
-				FileInputStream in = new FileInputStream(file);
-				CompilationUnit cu;
-				try {
-					// Build AST
-					cu = parse (in);
-				} finally {
-					in.close();
-				}
-
-				
-				CodeVisitor visitor = new CodeVisitor();
-				visitor.visit(cu, null); // Collect information
-				visitor.generate (); // First pass
-
-				compilationUnits.add (new JavaSource(file.substring (0, file.lastIndexOf (".")), cu, visitor));
+				options.add (file);
+				continue;
 			}
 
-			// Try to compile. Errors needed for second pass
-			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-			CompilationTask task = compiler.getTask(null, null,
-				(e) -> ((JavaSource) e.getSource ()).getVisitor ().resolveError (e.getLineNumber (), e.getColumnNumber())
-			, options, null, compilationUnits);
-			task.call();
+			try
+			{
+				FileInputStream in = new FileInputStream(file);
+				CompilationUnit cu;
+				try
+				{
+					// Build AST
+					cu = parse (in);
 
-			// Compile resulting sources
-			task = compiler.getTask(null, null, null, options, null, compilationUnits);
-			task.call();
+					CodeVisitor visitor = new CodeVisitor();
+					visitor.visit(cu, null); // Collect information
+					visitor.generate (); // First pass
+
+					compilationUnits.add (new JavaSource(file.substring (0, file.lastIndexOf (".")), cu, visitor));
+				} catch (ParseException e)
+				{
+					System.out.println (e);
+				} finally
+				{
+					in.close();
+				}
+			}
+			catch (IOException e)
+			{
+				System.out.println (e);
+			}
 		}
-		catch (IOException|ParseException e)
+
+		if (compilationUnits.size () < 1)
+			return;
+
+		// Try to compile. Errors needed for second pass
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		CompilationTask task = compiler.getTask(null, null, (e) ->
 		{
-			System.out.println (e);
-		}
+			((JavaSource) e.getSource ()).getVisitor ().resolveError (e.getLineNumber (), e.getColumnNumber());
+		}, options, null, compilationUnits);
+		task.call();
+
+		// Compile resulting sources
+		task = compiler.getTask(null, null, null, options, null, compilationUnits);
+		task.call();
 	}
 
 	/**
-	 *	Parse java code using modified ASTParser to support JavaGrande syntax.
+	 * Parse java code using modified ASTParser to support JavaGrande syntax.
 	 *
 	 * @param in Data to parse
 	 * @return Base node of the AST

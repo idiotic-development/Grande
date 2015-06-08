@@ -13,7 +13,6 @@ import com.github.javaparser.ast.CompilationUnit;
 class JavaSource extends SimpleJavaFileObject
 {
 	private CompilationUnit cu;
-	private String code;
 	private CodeVisitor visitor;
 
 	/**

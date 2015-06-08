@@ -16,7 +16,18 @@ define "JavaGrande" do
   project.group = GROUP
   manifest["Implementation-Vendor"] = COPYRIGHT
   compile.with 'com.github.javaparser:javaparser-core:jar:2.1.0'
+  compile.with 'com.lexicalscope.jewelcli:jewelcli:jar:0.8.9'
+  compile.with 'org.hamcrest:hamcrest-all:jar:1.3'
   compile.from javacc(_('src/main/javacc'), :in_package=>'com.idioticdev.javagrande')
-  run.using :main => ["com.idioticdev.javagrande.JavaGrande", "Test.java"]
+  run.using :main => "com.idioticdev.javagrande.JavaGrande"
   package(:jar)
+  package(:jar).enhance { |pkg| pkg.enhance { |pkg| add_dependencies(pkg) }}
+end
+
+def add_dependencies(pkg)
+  tempfile = pkg.to_s.sub(/.jar$/, "-without-dependencies.jar")
+  mv pkg.to_s, tempfile
+
+  dependencies = compile.dependencies.map { |d| "-c #{d}"}.join(" ")
+  sh "java -jar tools/autojar.jar -bae -m manifest -o #{pkg} #{dependencies} #{tempfile} -C resources com/*"
 end
