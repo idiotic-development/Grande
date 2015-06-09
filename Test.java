@@ -12,17 +12,20 @@ public class Test
 		private set
 		{
 			System.out.println ("setting property");
+			_property = value;
 		}
 	}
 
-	String defaultProp { get; set; }
+	int defaultProp { get; set; }
 
-
-	public static void main ()
+	public static void main (String[] argv)
 	{
 		Test test = new Test ();
-		test.defaultProp = "test";
+		test.property = "test";
 
-		System.out.println (test.defaultProp);
+		test.defaultPropObserver = (oldVal, newVal) ->
+			System.out.println ("DefaultProp changed from "+oldVal+" to "+newVal);
+
+		test.defaultProp = 0;
 	}
 }

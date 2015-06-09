@@ -8,6 +8,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.BodyDeclaration;
@@ -19,13 +21,17 @@ import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
-
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.NullLiteralExpr;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 
 /**
  * Walks the AST and modifies it, replacing the JavaGrande syntax with it's counter part.
@@ -38,6 +44,15 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 {
 	private List<PropertyDeclaration> props = new LinkedList<> ();
 	private List<FieldAccessExpr> fields = new LinkedList<> ();
+	private CompilationUnit cu;
+
+	@Override
+	public void visit (final CompilationUnit n, final T arg)
+	{
+		super.visit (n, arg);
+		cu = n;
+	}
+
 
 	/**
 	 * Collects {@link PropertryDeclaration}s to convert later.
@@ -54,9 +69,15 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 	 *
 	 * @param field Field to be collected
 	 */
+	@Override
 	public void visit (final FieldAccessExpr field, final T arg)
 	{
 		fields.add (field);
+	}
+
+	public boolean hasProperties ()
+	{
+		return props.size () > 0;
 	}
 
 
@@ -66,6 +87,14 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 	 */
 	public void generate ()
 	{
+		if (hasProperties ())
+		{
+			List<ImportDeclaration> imports = cu.getImports ();
+			if (imports == null) imports = new LinkedList<ImportDeclaration> ();
+			imports.add (new ImportDeclaration(new NameExpr (PropertyObserverSource.getPackage ()), false, false));
+			cu.setImports (imports);
+		}
+
 		for (PropertyDeclaration prop : props)
 		{
 			MethodDeclaration set = prop.getSet ();
@@ -76,6 +105,16 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 			if (set.getBody () == null)
 			{
 				List<Statement> stmts = new LinkedList<> ();
+
+				// Nodify observer
+				BinaryExpr condition = new BinaryExpr (new NameExpr (prop.getName ()+"Observer"), new NullLiteralExpr (), BinaryExpr.Operator.notEquals);
+				List<Expression> args = new LinkedList<> ();
+				args.add (new NameExpr ("_"+prop.getName ()));
+				args.add (new NameExpr ("value"));
+				ExpressionStmt thenStmt = new ExpressionStmt (new MethodCallExpr(new NameExpr (prop.getName ()+"Observer"), "changed", args));
+				stmts.add (new IfStmt (condition, thenStmt, null));
+
+				// Set backing field
 				FieldAccessExpr target = new FieldAccessExpr(new ThisExpr (null), "_"+prop.getName ());
 				stmts.add (new ExpressionStmt(new AssignExpr(target, new NameExpr ("value"), AssignExpr.Operator.assign)));
 				set.setBody (new BlockStmt (stmts));
@@ -98,10 +137,49 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 			variables.add (new VariableDeclarator (new VariableDeclaratorId ("_"+prop.getName ())));
 			FieldDeclaration field = new FieldDeclaration (Modifier.PRIVATE, prop.getType (), variables);
 
+			// Observer field
+			variables = new LinkedList<> ();
+			List<Type> typeArgs = new LinkedList ();
+			switch (prop.getType ().toString ())
+			{
+				case "boolean":
+					typeArgs.add (new ClassOrInterfaceType ("Boolean"));
+					break;
+				case "char":
+					typeArgs.add (new ClassOrInterfaceType ("Character"));
+					break;
+				case "byte":
+					typeArgs.add (new ClassOrInterfaceType ("Byte"));
+					break;
+				case "short":
+					typeArgs.add (new ClassOrInterfaceType ("Short"));
+					break;
+				case "int":
+					typeArgs.add (new ClassOrInterfaceType ("Integer"));
+					break;
+				case "long":
+					typeArgs.add (new ClassOrInterfaceType ("Long"));
+					break;
+				case "float":
+					typeArgs.add (new ClassOrInterfaceType ("Float"));
+					break;
+				case "double":
+					typeArgs.add (new ClassOrInterfaceType ("Double"));
+					break;
+				default:
+					typeArgs.add (prop.getType ());
+					break;
+			}
+			variables.add (new VariableDeclarator (new VariableDeclaratorId (prop.getName ()+"Observer")));
+			ClassOrInterfaceType type = new ClassOrInterfaceType ("PropertyObserver");
+			type.setTypeArgs (typeArgs);
+			FieldDeclaration observer = new FieldDeclaration (Modifier.PUBLIC, type, variables);
+
 			// Add field, getter, and setter to class body
 			TypeDeclaration parent = (TypeDeclaration) prop.getParentNode ();
 			List<BodyDeclaration> members = parent.getMembers ();
 			members.add (field);
+			members.add (observer);
 			members.add (set);
 			members.add (get);
 
@@ -127,7 +205,10 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 		{
 			Expression scope = field.getScope ();
 			if (scope.getEndLine () != line || scope.getEndColumn ()+1 != col)
+			{
+				System.out.println (scope.getEndLine ()+"!="+line+"||"+scope.getEndColumn ()+"1 != "+col);
 				continue;
+			}
 
 			// if field is the right side of an assignment it's a setter
 			if (field.getParentNode () instanceof AssignExpr)
@@ -139,6 +220,7 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 					Node parent = ae.getParentNode();
 					String name = field.getField ();
 					name = "set"+Character.toUpperCase (name.charAt (0)) + name.substring (1);
+					System.out.println ("Transform setter "+name);
 					List<Expression> args = new LinkedList<>();
 					args.add (ae.getValue ());
 					MethodCallExpr mc = new MethodCallExpr(field.getBeginLine (), field.getBeginColumn (), field.getEndLine (), field.getEndColumn (),

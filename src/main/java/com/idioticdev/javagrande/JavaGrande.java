@@ -24,8 +24,10 @@ public class JavaGrande
 	public static void main (String[] argv)
 	{
 
-		List<JavaFileObject> compilationUnits = new LinkedList<> ();
+		List<JavaFileObject> sources = new LinkedList<> ();
 		List<String> options = new LinkedList<> ();
+
+		boolean hasProperties = false;
 
 		for (String file : argv)
 		{
@@ -47,9 +49,10 @@ public class JavaGrande
 
 					CodeVisitor visitor = new CodeVisitor();
 					visitor.visit(cu, null); // Collect information
+					hasProperties = hasProperties || visitor.hasProperties ();
 					visitor.generate (); // First pass
 
-					compilationUnits.add (new JavaSource(file.substring (0, file.lastIndexOf (".")), cu, visitor));
+					sources.add (new JavaSource(file.substring (0, file.lastIndexOf (".")), cu, visitor));
 				} catch (ParseException e)
 				{
 					System.out.println (e);
@@ -64,19 +67,24 @@ public class JavaGrande
 			}
 		}
 
-		if (compilationUnits.size () < 1)
+		if (sources.size () < 1)
 			return;
+
+		sources.add (new PropertyObserverSource ());
 
 		// Try to compile. Errors needed for second pass
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		CompilationTask task = compiler.getTask(null, null, (e) ->
 		{
-			((JavaSource) e.getSource ()).getVisitor ().resolveError (e.getLineNumber (), e.getColumnNumber());
-		}, options, null, compilationUnits);
+			if (e.getSource () instanceof JavaSource)
+				((JavaSource) e.getSource ()).getVisitor ().resolveError (e.getLineNumber (), e.getColumnNumber());
+			else
+				System.out.println (e);
+		}, options, null, sources);
 		task.call();
 
 		// Compile resulting sources
-		task = compiler.getTask(null, null, null, options, null, compilationUnits);
+		task = compiler.getTask(null, null, null, options, null, sources);
 		task.call();
 	}
 

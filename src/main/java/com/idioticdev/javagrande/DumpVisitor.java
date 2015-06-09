@@ -1512,12 +1512,14 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 
 		printer.print("->", n.getBeginLine (), n.getBeginColumn ());
 		Statement body = n.getBody();
-		String bodyStr = body.toString();
 		if (body instanceof ExpressionStmt) {
 			// removing ';'
+			String bodyStr = body.toString();
 			bodyStr = bodyStr.substring(0, bodyStr.length() - 1);
+			printer.print(bodyStr, body.getBeginLine (), body.getBeginColumn ());
+		} else {
+			visit((BlockStmt) body, arg);
 		}
-		printer.print(bodyStr, n.getBeginLine (), n.getBeginColumn ());
 
 	}
 

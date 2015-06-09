@@ -19,7 +19,7 @@ define "JavaGrande" do
   compile.with 'com.lexicalscope.jewelcli:jewelcli:jar:0.8.9'
   compile.with 'org.hamcrest:hamcrest-all:jar:1.3'
   compile.from javacc(_('src/main/javacc'), :in_package=>'com.idioticdev.javagrande')
-  run.using :main => "com.idioticdev.javagrande.JavaGrande"
+  run.using :main => ["com.idioticdev.javagrande.JavaGrande", "Test.java"]
   package(:jar)
   package(:jar).enhance { |pkg| pkg.enhance { |pkg| add_dependencies(pkg) }}
 end
