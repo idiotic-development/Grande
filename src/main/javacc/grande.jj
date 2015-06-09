@@ -204,6 +204,7 @@ TOKEN :
 {
   < SET: "set" >
 | < GET: "get" >
+| < DEF: "def" >
 }
 
 
@@ -1534,14 +1535,16 @@ PropertyDeclaration PropertyDeclaration():
   Modifier setModifiers = null;
   BlockStmt get = null;
   Modifier getModifiers = null;
+  Expression defaultVal = null;
 }
 {
-  // Modifiers are already matched in the caller
   type = Type()
   <IDENTIFIER> { name = token.image; }
-  "{" [ setModifiers = Modifiers() "get" (get = Block()|";")] [ getModifiers = Modifiers () "set" (set = Block()|";")] "}"
+  "{" [ setModifiers = Modifiers() "get" (get = Block()|";")]
+  [ getModifiers = Modifiers () "set" (set = Block()|";")] 
+  [ "def" "=" defaultVal = Expression () [";"] ] "}"
 
-  { 
+  {
   	int line = type.getBeginLine();
   	int column = type.getBeginColumn();
 
@@ -1554,7 +1557,7 @@ PropertyDeclaration PropertyDeclaration():
     MethodDeclaration getMethod = new MethodDeclaration(line, column, token.endLine, token.endColumn,
       getModifiers.modifiers, null, null, type, "get"+Character.toUpperCase(name.charAt(0))+name.substring(1), null, 0, null, get);
 
-    return new PropertyDeclaration(line, column, token.endLine, token.endColumn, type, name, getMethod, setMethod);
+    return new PropertyDeclaration(line, column, token.endLine, token.endColumn, type, name, getMethod, setMethod, defaultVal);
   }
 }
 

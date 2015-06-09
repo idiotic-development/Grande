@@ -5,6 +5,7 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
@@ -18,24 +19,27 @@ public final class PropertyDeclaration extends BodyDeclaration implements Docume
 	private String name;
 	private MethodDeclaration set;
 	private MethodDeclaration get;
+	private Expression defaultVal;
 
 	public PropertyDeclaration() {}
 
-	public PropertyDeclaration(Type type, String name, MethodDeclaration get, MethodDeclaration set)
+	public PropertyDeclaration(Type type, String name, MethodDeclaration get, MethodDeclaration set, Expression defaultVal)
 	{
 		setType(type);
 		setName(name);
 		setSet(set);
 		setGet(get);
+		setDefault (defaultVal);
 	}
 
-	public PropertyDeclaration(int beginLine, int beginColumn, int endLine, int endColumn, Type type, String name,  MethodDeclaration get, MethodDeclaration set)
+	public PropertyDeclaration(int beginLine, int beginColumn, int endLine, int endColumn, Type type, String name, MethodDeclaration get, MethodDeclaration set, Expression defaultVal)
 	{
 		super(beginLine, beginColumn, endLine, endColumn, null);
 		setType(type);
 		setName(name);
 		setSet(set);
 		setGet(get);
+		setDefault (defaultVal);
 	}
 
 	@Override
@@ -87,6 +91,16 @@ public final class PropertyDeclaration extends BodyDeclaration implements Docume
 	public void setName (String name)
 	{
 		this.name = name;
+	}
+
+	public Expression getDefault ()
+	{
+		return defaultVal;
+	}
+
+	public void setDefault (Expression defaultVal)
+	{
+		this.defaultVal = defaultVal;
 	}
 
 	@Override

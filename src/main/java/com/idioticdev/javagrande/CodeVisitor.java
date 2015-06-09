@@ -134,7 +134,7 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 
 			// Field to back the property. Name of the property prefixed with _
 			List<VariableDeclarator> variables = new LinkedList<> ();
-			variables.add (new VariableDeclarator (new VariableDeclaratorId ("_"+prop.getName ())));
+			variables.add (new VariableDeclarator (new VariableDeclaratorId ("_"+prop.getName ()), prop.getDefault ()));
 			FieldDeclaration field = new FieldDeclaration (Modifier.PRIVATE, prop.getType (), variables);
 
 			// Observer field
@@ -205,10 +205,7 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 		{
 			Expression scope = field.getScope ();
 			if (scope.getEndLine () != line || scope.getEndColumn ()+1 != col)
-			{
-				System.out.println (scope.getEndLine ()+"!="+line+"||"+scope.getEndColumn ()+"1 != "+col);
 				continue;
-			}
 
 			// if field is the right side of an assignment it's a setter
 			if (field.getParentNode () instanceof AssignExpr)
@@ -220,7 +217,6 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 					Node parent = ae.getParentNode();
 					String name = field.getField ();
 					name = "set"+Character.toUpperCase (name.charAt (0)) + name.substring (1);
-					System.out.println ("Transform setter "+name);
 					List<Expression> args = new LinkedList<>();
 					args.add (ae.getValue ());
 					MethodCallExpr mc = new MethodCallExpr(field.getBeginLine (), field.getBeginColumn (), field.getEndLine (), field.getEndColumn (),

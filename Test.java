@@ -16,7 +16,7 @@ public class Test
 		}
 	}
 
-	int defaultProp { get; set; }
+	int defaultProp { get; set; def = 0 }
 
 	public static void main (String[] argv)
 	{
@@ -26,6 +26,6 @@ public class Test
 		test.defaultPropObserver = (oldVal, newVal) ->
 			System.out.println ("DefaultProp changed from "+oldVal+" to "+newVal);
 
-		test.defaultProp = 0;
+		test.defaultProp = 1;
 	}
 }
