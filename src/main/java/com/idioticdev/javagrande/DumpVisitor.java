@@ -123,6 +123,22 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 			column += s.length ();
 		}
 
+		public void advanceTo (int start, int col)
+		{
+			while (line < start)
+			{
+				buf.append ("\n");
+				line++;
+				column = 1;
+			}
+
+			while (column < col)
+			{
+				buf.append (" ");
+				column++;
+			}
+		}
+
 		public String getSource() {
 			return buf.toString();
 		}
@@ -360,7 +376,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 		}
 
         printOrphanCommentsEnding(n);
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 	}
 
 	@Override public void visit(final EmptyTypeDeclaration n, final Object arg) {
@@ -552,7 +568,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 			}
 			printer.print(" ", n.getBeginLine (), n.getBeginColumn ());
 		}
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 	}
 
 	@Override public void visit(final VoidType n, final Object arg) {
@@ -880,7 +896,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 		if (n.getAnonymousClassBody() != null) {
 			printer.print(" {", n.getBeginLine (), n.getBeginColumn ());
 			printMembers(n.getAnonymousClassBody(), arg);
-			printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+			printer.print("}", n.getEndLine (), n.getBeginColumn ());
 		}
 	}
 
@@ -1100,7 +1116,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 				s.accept(this, arg);
 			}
 		}
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 
 	}
 
@@ -1119,6 +1135,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 	@Override public void visit(final ExpressionStmt n, final Object arg) {
 		printOrphanCommentsBeforeThisChildNode(n);
 		printJavaComment(n.getComment(), arg);
+		printer.advanceTo (n.getBeginLine (), n.getBeginColumn ());
 		n.getExpression().accept(this, arg);
 		printer.print(";", n.getBeginLine (), n.getBeginColumn ());
 	}
@@ -1133,7 +1150,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 				e.accept(this, arg);
 			}
 		}
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 
 	}
 
@@ -1210,7 +1227,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 			if (n.getEntries() != null) {
 			}
 		}
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 	}
 
 	@Override public void visit(final EnumConstantDeclaration n, final Object arg) {
@@ -1226,7 +1243,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 		if (n.getClassBody() != null) {
 			printer.print(" {", n.getBeginLine (), n.getBeginColumn ());
 			printMembers(n.getClassBody(), arg);
-			printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+			printer.print("}", n.getEndLine (), n.getBeginColumn ());
 		}
 	}
 
@@ -1407,7 +1424,7 @@ public final class DumpVisitor implements VoidVisitor<Object> {
 		if (n.getMembers() != null) {
 			printMembers(n.getMembers(), arg);
 		}
-		printer.print("}", n.getBeginLine (), n.getBeginColumn ());
+		printer.print("}", n.getEndLine (), n.getBeginColumn ());
 	}
 
 	@Override public void visit(final AnnotationMemberDeclaration n, final Object arg) {

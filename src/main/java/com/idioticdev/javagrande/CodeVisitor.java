@@ -97,45 +97,20 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 
 		for (PropertyDeclaration prop : props)
 		{
-			MethodDeclaration set = prop.getSet ();
-			if (set.getModifiers () == 0)
-				set.setModifiers (Modifier.PUBLIC);
-
-			// Default setter
-			if (set.getBody () == null)
-			{
-				List<Statement> stmts = new LinkedList<> ();
-
-				// Nodify observer
-				BinaryExpr condition = new BinaryExpr (new NameExpr (prop.getName ()+"Observer"), new NullLiteralExpr (), BinaryExpr.Operator.notEquals);
-				List<Expression> args = new LinkedList<> ();
-				args.add (new NameExpr ("_"+prop.getName ()));
-				args.add (new NameExpr ("value"));
-				ExpressionStmt thenStmt = new ExpressionStmt (new MethodCallExpr(new NameExpr (prop.getName ()+"Observer"), "changed", args));
-				stmts.add (new IfStmt (condition, thenStmt, null));
-
-				// Set backing field
-				FieldAccessExpr target = new FieldAccessExpr(new ThisExpr (null), "_"+prop.getName ());
-				stmts.add (new ExpressionStmt(new AssignExpr(target, new NameExpr ("value"), AssignExpr.Operator.assign)));
-				set.setBody (new BlockStmt (stmts));
-			}
-
-			MethodDeclaration get = prop.getGet ();
-			if (get.getModifiers () == 0)
-				get.setModifiers (Modifier.PUBLIC);
-			
-			// Default getter
-			if (get.getBody () == null)
-			{
-				List<Statement> stmts = new LinkedList<> ();
-				stmts.add (new ReturnStmt (new FieldAccessExpr(new ThisExpr (null), "_"+prop.getName ())));
-				get.setBody (new BlockStmt (stmts));
-			}
+			TypeDeclaration parent = (TypeDeclaration) prop.getParentNode ();
+			List<BodyDeclaration> members = parent.getMembers ();
+			int last = members.get (members.size ()-1).getEndLine ()+1;
+			int col = members.get (members.size ()-1).getBeginColumn ();
 
 			// Field to back the property. Name of the property prefixed with _
 			List<VariableDeclarator> variables = new LinkedList<> ();
-			variables.add (new VariableDeclarator (new VariableDeclaratorId ("_"+prop.getName ()), prop.getDefault ()));
+			Expression defaultVal = prop.getDefault ();
+			if (defaultVal != null)
+				defaultVal.setBeginColumn (0);
+			variables.add (new VariableDeclarator (new VariableDeclaratorId ("_"+prop.getName ()), defaultVal));
 			FieldDeclaration field = new FieldDeclaration (Modifier.PRIVATE, prop.getType (), variables);
+			field.setBeginLine (++last);
+			field.setBeginColumn (col);
 
 			// Observer field
 			variables = new LinkedList<> ();
@@ -174,10 +149,73 @@ public class CodeVisitor<T> extends VoidVisitorAdapter<T>
 			ClassOrInterfaceType type = new ClassOrInterfaceType ("PropertyObserver");
 			type.setTypeArgs (typeArgs);
 			FieldDeclaration observer = new FieldDeclaration (Modifier.PUBLIC, type, variables);
+			observer.setBeginLine (++last);
+			observer.setBeginColumn (col);
+
+			last++;
+
+			MethodDeclaration set = prop.getSet ();
+			set.setBeginLine (++last);
+			if (set.getModifiers () == 0)
+				set.setModifiers (Modifier.PUBLIC);
+
+			// Default setter
+			if (set.getBody () == null)
+			{
+				List<Statement> stmts = new LinkedList<> ();
+
+				// Nodify observer
+				BinaryExpr condition = new BinaryExpr (new NameExpr (prop.getName ()+"Observer"), new NullLiteralExpr (), BinaryExpr.Operator.notEquals);
+				List<Expression> args = new LinkedList<> ();
+				args.add (new NameExpr ("_"+prop.getName ()));
+				args.add (new NameExpr ("value"));
+				ExpressionStmt thenStmt = new ExpressionStmt (new MethodCallExpr(new NameExpr (prop.getName ()+"Observer"), "changed", args));
+				Statement stmt = new IfStmt (condition, thenStmt, null);
+				stmt.setBeginColumn (col+4);
+				stmts.add (stmt);
+
+				// Set backing field
+				FieldAccessExpr target = new FieldAccessExpr(new ThisExpr (null), "_"+prop.getName ());
+				stmt = new ExpressionStmt(new AssignExpr(target, new NameExpr ("value"), AssignExpr.Operator.assign));
+				stmt.setBeginColumn (col+4);
+				stmts.add (stmt);
+				set.setBody (new BlockStmt (stmts));
+			}
+
+			BlockStmt body = set.getBody ();
+			for (Statement stmt : body.getStmts ())
+				stmt.setBeginLine (++last);
+
+			body.setEndLine (++last);
+			body.setBeginColumn (col);
+			set.setEndLine (last++);
+
+			MethodDeclaration get = prop.getGet ();
+			get.setBeginLine (++last);
+			if (get.getModifiers () == 0)
+				get.setModifiers (Modifier.PUBLIC);
+
+			// Default getter
+			if (get.getBody () == null)
+			{
+				List<Statement> stmts = new LinkedList<> ();
+				Statement stmt = new ReturnStmt (new FieldAccessExpr(new ThisExpr (null), "_"+prop.getName ()));
+				stmt.setBeginColumn (col+4);
+				stmts.add (stmt);
+				get.setBody (new BlockStmt (stmts));
+			}
+
+			body = get.getBody ();
+			for (Statement stmt : body.getStmts ())
+				stmt.setBeginLine (++last);
+
+			body.setEndLine (++last);
+			body.setBeginColumn (col);
+			get.setEndLine (last);
+
+			parent.setEndLine (++last);
 
 			// Add field, getter, and setter to class body
-			TypeDeclaration parent = (TypeDeclaration) prop.getParentNode ();
-			List<BodyDeclaration> members = parent.getMembers ();
 			members.add (field);
 			members.add (observer);
 			members.add (set);

@@ -82,7 +82,7 @@ public class JavaGrande
 				System.out.println (e);
 		}, options, null, sources);
 		task.call();
-		
+
 		// Compile resulting sources
 		task = compiler.getTask(null, null, null, options, null, sources);
 		task.call();
