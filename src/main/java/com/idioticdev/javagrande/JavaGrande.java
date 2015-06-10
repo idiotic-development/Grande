@@ -55,7 +55,7 @@ public class JavaGrande
 					sources.add (new JavaSource(file.substring (0, file.lastIndexOf (".")), cu, visitor));
 				} catch (ParseException e)
 				{
-					System.out.println (e);
+					System.out.println ("Problem parsing file "+file+".\n"+e);
 				} finally
 				{
 					in.close();
