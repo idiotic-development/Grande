@@ -6,6 +6,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -70,6 +73,23 @@ public class JavaGrande
 		if (sources.size () < 1)
 			return;
 
+		String path = "";
+		int o = options.indexOf ("-o");
+		if (o < 0) options.indexOf ("--output");
+		if (o > -1)
+		{
+			if (o+1 > options.size ()-1)
+			{
+				System.out.println ("You must specify a directory with the -o or --output options.");
+				return;
+			}
+			else
+			{
+				path = options.get (o+1);
+				options.remove (o);
+			}
+		}
+
 		sources.add (new PropertyObserverSource ());
 
 		// Try to compile. Errors needed for second pass
@@ -83,9 +103,24 @@ public class JavaGrande
 		}, options, null, sources);
 		task.call();
 
-		// Compile resulting sources
-		task = compiler.getTask(null, null, null, options, null, sources);
-		task.call();
+		if (path.isEmpty ())
+		{
+			// Compile resulting sources
+			task = compiler.getTask(null, null, null, options, null, sources);
+			task.call();
+		} else
+		{
+			for (JavaFileObject source : sources)
+				try
+				{
+					Files.createDirectories (Paths.get (path));
+					Files.write(Paths.get(path, source.getName ()), source.getCharContent (true).toString ().getBytes());
+				} catch (IOException e)
+				{
+					System.out.println (e);
+				}
+		}
+
 	}
 
 	/**
