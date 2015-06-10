@@ -29,3 +29,10 @@ def add_dependencies(pkg)
   dependencies = compile.dependencies.map { |d| "-c #{d}"}.join(" ")
   sh "java -jar tools/autojar.jar -bae -m manifest -o #{pkg} #{dependencies} #{tempfile}"
 end
+
+task :install => [:package] do
+  sh "cp target/JavaGrande-#{VERSION_NUMBER}.jar $JAVA_HOMElib/JavaGrande.jar"
+  print "Installed target/JavaGrande-#{VERSION_NUMBER}.jar to $JAVA_HOME/lib/JavaGrande.jar\n"
+  sh "cp javac.sh /usr/bin/javac"
+  print "Installed javac.sh to /usr/bin/javac\n"
+end
