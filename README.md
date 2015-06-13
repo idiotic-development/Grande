@@ -16,7 +16,7 @@ If the output directory is specified processed source files will be written ther
 
 The basic syntax is as follows.
 
-    String foo { get; set; def = "bar" }
+    String foo { get; set; default = "bar" }
 
 This defines a property named *foo* with a default value of *bar*. Now you can access the property as if it was a public field.
 

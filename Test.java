@@ -16,7 +16,7 @@ public class Test
 		}
 	}
 
-	int defaultProp { get; set; def = 0 }
+	int defaultProp { get; set; default = 0 }
 
 	public static void main (String[] argv)
 	{

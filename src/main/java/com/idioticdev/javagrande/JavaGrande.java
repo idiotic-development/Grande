@@ -75,7 +75,7 @@ public class JavaGrande
 
 		String path = "";
 		int o = options.indexOf ("-o");
-		if (o < 0) options.indexOf ("--output");
+		if (o < 0) o = options.indexOf ("--output");
 		if (o > -1)
 		{
 			if (o+1 > options.size ()-1)
@@ -86,6 +86,7 @@ public class JavaGrande
 			else
 			{
 				path = options.get (o+1);
+				options.remove (o);
 				options.remove (o);
 			}
 		}

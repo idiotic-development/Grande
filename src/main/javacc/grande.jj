@@ -204,7 +204,6 @@ TOKEN :
 {
   < SET: "set" >
 | < GET: "get" >
-| < DEF: "def" >
 }
 
 
@@ -1368,7 +1367,7 @@ EnumConstantDeclaration EnumConstantDeclaration():
 {
   {  }
   ( ann = Annotation() { annotations = add(annotations, ann); if(line==-1){line=ann.getBeginLine(); column=ann.getBeginColumn();} } )*
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; if(line==-1){line=token.beginLine; column=token.beginColumn;} } 
+  (<GET>|<SET>|<IDENTIFIER>) { name = token.image; if(line==-1){line=token.beginLine; column=token.beginColumn;} } 
   [ args = Arguments() ] [ classBody = ClassOrInterfaceBody(false) ]
   { 
       EnumConstantDeclaration tmp = new EnumConstantDeclaration(line, column, token.endLine, token.endColumn, annotations, name, args, classBody);  
@@ -1402,7 +1401,7 @@ TypeParameter TypeParameter():
 	int column;
 }
 {
-   (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;} [ typeBound = TypeBound() ]
+   (<GET>|<SET>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;} [ typeBound = TypeBound() ]
    { return new TypeParameter(line, column, token.endLine, token.endColumn,name, typeBound); }
 }
 
@@ -1466,13 +1465,13 @@ BodyDeclaration ClassOrInterfaceBodyDeclaration(boolean isInterface):
 	    |
 	      ret = AnnotationTypeDeclaration(modifier)
 	    |
-	      LOOKAHEAD( [ TypeParameters() ] (<GET>|<SET>|<DEF>|<IDENTIFIER>) "(" )
+	      LOOKAHEAD( [ TypeParameters() ] (<GET>|<SET>|<IDENTIFIER>) "(" )
 	      ret = ConstructorDeclaration(modifier)
 	    |
-	      LOOKAHEAD( Type() (<GET>|<SET>|<DEF>|<IDENTIFIER>) ( "[" "]" )* ( "," | "=" | ";" ) )
+	      LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) ( "[" "]" )* ( "," | "=" | ";" ) )
 	      ret = FieldDeclaration(modifier)
 	    |
-        LOOKAHEAD( Type() (<GET>|<SET>|<DEF>|<IDENTIFIER>) "{" )
+        LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) "{" )
         ret = PropertyDeclaration()
         {
           if (modifier.modifiers != 0)
@@ -1539,11 +1538,11 @@ PropertyDeclaration PropertyDeclaration():
 }
 {
   type = Type()
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; }
+  (<GET>|<SET>|<IDENTIFIER>) { name = token.image; }
   "{" 
   [ LOOKAHEAD(2) setModifiers = Modifiers() "get" (get = Block()|";")]
   [ getModifiers = Modifiers () "set" (set = Block()|";")] 
-  [ "def" "=" defaultVal = Expression () [";"] ] "}"
+  [ "default" "=" defaultVal = Expression () [";"] ] "}"
 
   {
   	int line = type.getBeginLine();
@@ -1580,7 +1579,7 @@ VariableDeclaratorId VariableDeclaratorId():
 	int column;
 }
 {
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;}  ( "[" "]" { arrayCount++; } )*
+  (<GET>|<SET>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;}  ( "[" "]" { arrayCount++; } )*
   { return new VariableDeclaratorId(line, column, token.endLine, token.endColumn,name, arrayCount); }
 }
 
@@ -1820,11 +1819,11 @@ ClassOrInterfaceType ClassOrInterfaceType():
 	AnnotationExpr ann;
 }
 {
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) {line=token.beginLine; column=token.beginColumn;} { name = token.image; }
+  (<GET>|<SET>|<IDENTIFIER>) {line=token.beginLine; column=token.beginColumn;} { name = token.image; }
   [ LOOKAHEAD(2) typeArgs = TypeArguments() {typeArgs.remove(0);} ]
   { ret = new ClassOrInterfaceType(line, column, token.endLine, token.endColumn,null, name, typeArgs); }
   (
-	  LOOKAHEAD(2) "." (ann = Annotation()   { annotations = add(annotations, ann);})*  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; }
+	  LOOKAHEAD(2) "." (ann = Annotation()   { annotations = add(annotations, ann);})*  (<GET>|<SET>|<IDENTIFIER>) { name = token.image; }
 	  [ LOOKAHEAD(2) typeArgs = TypeArguments() {typeArgs.remove(0);} ] { ret = new ClassOrInterfaceType(line, column, token.endLine, token.endColumn,ret, name, typeArgs); ret.setAnnotations(annotations); annotations = null; }
   )*
   { return ret; }
@@ -1937,8 +1936,8 @@ NameExpr Name():
 	NameExpr ret;
 }
 {
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { ret = new NameExpr(token.beginLine, token.beginColumn, token.endLine, token.endColumn, token.image); }
-  ( LOOKAHEAD(2) "." (<GET>|<SET>|<DEF>|<IDENTIFIER>) { ret = new QualifiedNameExpr(ret.getBeginLine(), ret.getBeginColumn(), token.endLine, token.endColumn, ret, token.image); } )*
+  (<GET>|<SET>|<IDENTIFIER>) { ret = new NameExpr(token.beginLine, token.beginColumn, token.endLine, token.endColumn, token.image); }
+  ( LOOKAHEAD(2) "." (<GET>|<SET>|<IDENTIFIER>) { ret = new QualifiedNameExpr(ret.getBeginLine(), ret.getBeginColumn(), token.endLine, token.endColumn, ret, token.image); } )*
   { return ret; }
 }
 
@@ -1960,7 +1959,7 @@ NameExpr SimpleName():
     NameExpr ret;
 }
 {
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) { ret = new NameExpr(token.beginLine, token.beginColumn, token.endLine, token.endColumn, token.image); }
+  (<GET>|<SET>|<IDENTIFIER>) { ret = new NameExpr(token.beginLine, token.beginColumn, token.endLine, token.endColumn, token.image); }
   { return ret; }
 }
 
@@ -2019,7 +2018,7 @@ Expression Expression():
        ret = generateLambda(ret, lambdaBody);
      }
    }
- |  "::"  [typeArgs = TypeParameters() {typeArgs.remove(0);} ] ((<GET>|<SET>|<DEF>|<IDENTIFIER>) | "new")
+ |  "::"  [typeArgs = TypeParameters() {typeArgs.remove(0);} ] ((<GET>|<SET>|<IDENTIFIER>) | "new")
  {
    ret = new MethodReferenceExpr(ret.getBeginLine(), ret.getBeginColumn(), token.endLine, token.endColumn, ret, typeArgs, token.image);
  }
@@ -2380,7 +2379,7 @@ Expression PrimaryPrefix():
 			}
 	  	}
 	 |
-		"::" [typeArgs = TypeParameters() { typeArgs.remove(0); }] ((<GET>|<SET>|<DEF>|<IDENTIFIER>) | "new")
+		"::" [typeArgs = TypeParameters() { typeArgs.remove(0); }] ((<GET>|<SET>|<IDENTIFIER>) | "new")
 		{
 		  ret = new MethodReferenceExpr(ret.getBeginLine(), ret.getBeginColumn(), token.endLine, token.endColumn, ret, typeArgs, token.image);
 		}
@@ -2418,7 +2417,7 @@ Expression PrimaryPrefix():
 	  type = ResultType()  "." "class" { ret = new ClassExpr(type.getBeginLine(), type.getBeginColumn(), token.endLine, token.endColumn, type); }
 
 	| LOOKAHEAD (ResultType() "::" )
-	  type = ResultType() "::" [typeArgs = TypeParameters() { typeArgs.remove(0); }] ((<GET>|<SET>|<DEF>|<IDENTIFIER>) | "new")
+	  type = ResultType() "::" [typeArgs = TypeParameters() { typeArgs.remove(0); }] ((<GET>|<SET>|<IDENTIFIER>) | "new")
 		{
 		  ret = new TypeExpr(type.getBeginLine(), type.getBeginColumn(), type.getEndLine(), type.getEndColumn(), type);
 		  ret = new MethodReferenceExpr(ret.getBeginLine(), ret.getBeginColumn(), token.endLine, token.endColumn, ret, typeArgs, token.image);
@@ -2470,7 +2469,7 @@ Expression PrimarySuffixWithoutSuper(Expression scope):
 	  |
 	  	ret = AllocationExpression(scope)
 	  |
-	  	LOOKAHEAD( [ TypeArguments() ] (<GET>|<SET>|<DEF>|<IDENTIFIER>) )
+	  	LOOKAHEAD( [ TypeArguments() ] (<GET>|<SET>|<IDENTIFIER>) )
 	  	[ typeArgs = TypeArguments() {typeArgs.remove(0);} ]
 	  	name = SimpleName()
 	  	[ args = Arguments() {hasArgs=true;} ]
@@ -2713,7 +2712,7 @@ LabeledStmt LabeledStatement():
 	int column;
 }
 {
-  (<GET>|<SET>|<DEF>|<IDENTIFIER>) {line=token.beginLine; column=token.beginColumn;} { label = token.image; } ":" stmt = Statement()
+  (<GET>|<SET>|<IDENTIFIER>) {line=token.beginLine; column=token.beginColumn;} { label = token.image; } ":" stmt = Statement()
   { return new LabeledStmt(line, column, token.endLine, token.endColumn,label, stmt); }
 }
 
@@ -2973,7 +2972,7 @@ List ForInit():
 }
 {
   (
-	  LOOKAHEAD( Modifiers() Type() (<GET>|<SET>|<DEF>|<IDENTIFIER>) )
+	  LOOKAHEAD( Modifiers() Type() (<GET>|<SET>|<IDENTIFIER>) )
 	  expr = VariableDeclarationExpression() { ret = new LinkedList(); ret.add(expr); }
 	|
 	  ret = ExpressionList()
@@ -3009,7 +3008,7 @@ BreakStmt BreakStatement():
 	int column;
 }
 {
-  "break" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<DEF>|<IDENTIFIER>) { id = token.image; } ] ";"
+  "break" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] ";"
   { return new BreakStmt(line, column, token.endLine, token.endColumn,id); }
 }
 
@@ -3020,7 +3019,7 @@ ContinueStmt ContinueStatement():
 	int column;
 }
 {
-  "continue" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<DEF>|<IDENTIFIER>) { id = token.image; } ] ";"
+  "continue" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] ";"
   { return new ContinueStmt(line, column, token.endLine, token.endColumn,id); }
 }
 
@@ -3159,7 +3158,7 @@ AnnotationExpr Annotation():
 }
 {
   (
-	   LOOKAHEAD( "@" Name() "(" ( (<GET>|<SET>|<DEF>|<IDENTIFIER>) "=" | ")" ))
+	   LOOKAHEAD( "@" Name() "(" ( (<GET>|<SET>|<IDENTIFIER>) "=" | ")" ))
 	   ret = NormalAnnotation()
 	 |
 	   LOOKAHEAD( "@" Name() "(" )
@@ -3223,7 +3222,7 @@ MemberValuePair MemberValuePair():
 	int column;
 }
 {
-    (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;} "=" value = MemberValue()
+    (<GET>|<SET>|<IDENTIFIER>) { name = token.image; line=token.beginLine; column=token.beginColumn;} "=" value = MemberValue()
     { return new MemberValuePair(line, column, token.endLine, token.endColumn,name, value); }
 }
 
@@ -3300,7 +3299,7 @@ BodyDeclaration AnnotationBodyDeclaration():
   |
     modifier = Modifiers()
     (
-	   LOOKAHEAD(Type() (<GET>|<SET>|<DEF>|<IDENTIFIER>) "(")
+	   LOOKAHEAD(Type() (<GET>|<SET>|<IDENTIFIER>) "(")
 	   ret = AnnotationTypeMemberDeclaration(modifier)
 	  |
 	   ret = ClassOrInterfaceDeclaration(modifier)
@@ -3322,7 +3321,7 @@ AnnotationMemberDeclaration AnnotationTypeMemberDeclaration(Modifier modifier):
 	Expression defaultVal = null;
 }
 {
-  type = Type() (<GET>|<SET>|<DEF>|<IDENTIFIER>) { name = token.image; } "(" ")" [ defaultVal = DefaultValue() ] ";"
+  type = Type() (<GET>|<SET>|<IDENTIFIER>) { name = token.image; } "(" ")" [ defaultVal = DefaultValue() ] ";"
 
   {
     int line = modifier.beginLine;
