@@ -1139,6 +1139,14 @@ TOKEN :
  * Program structuring syntax follows.
  */
 
+void Semicolon():
+{}
+{
+	";"
+|
+	LOOKAHEAD( {getToken(0).endLine != getToken(1).beginLine} ) {}
+}
+
 CompilationUnit CompilationUnit():
 {
 	PackageDeclaration pakage = null;
@@ -1167,7 +1175,7 @@ PackageDeclaration PackageDeclaration():
 }
 {
 ( ann = Annotation() { annotations = add(annotations, ann); } )*
-  "package" {line=token.beginLine; column=token.beginColumn;}  name = Name() ";"
+  "package" {line=token.beginLine; column=token.beginColumn;}  name = Name() Semicolon()
   { return new PackageDeclaration(line, column, token.endLine, token.endColumn,annotations, name); }
 }
 
@@ -1180,7 +1188,7 @@ ImportDeclaration ImportDeclaration():
 	int column;
 }
 {
-  "import" {line=token.beginLine; column=token.beginColumn;} [ "static" { isStatic = true; } ] name = Name() [ "." "*" { isAsterisk = true; } ] ";"
+  "import" {line=token.beginLine; column=token.beginColumn;} [ "static" { isStatic = true; } ] name = Name() [ "." "*" { isAsterisk = true; } ] Semicolon()
   { return new ImportDeclaration(line, column, token.endLine, token.endColumn,name, isStatic, isAsterisk); }
 }
 
@@ -1468,17 +1476,17 @@ BodyDeclaration ClassOrInterfaceBodyDeclaration(boolean isInterface):
 	      LOOKAHEAD( [ TypeParameters() ] (<GET>|<SET>|<IDENTIFIER>) "(" )
 	      ret = ConstructorDeclaration(modifier)
 	    |
-	      LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) ( "[" "]" )* ( "," | "=" | ";" ) )
+	        LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) "{" )
+	        ret = PropertyDeclaration()
+	        {
+	          if (modifier.modifiers != 0)
+	          {
+	            throwParseException(token, "Place the modifiers on the get and set blocks.");
+	          }
+	        }
+        |
+	      LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) ( "[" "]" )* ( "," | "=" | Semicolon() ) )
 	      ret = FieldDeclaration(modifier)
-	    |
-        LOOKAHEAD( Type() (<GET>|<SET>|<IDENTIFIER>) "{" )
-        ret = PropertyDeclaration()
-        {
-          if (modifier.modifiers != 0)
-          {
-            throwParseException(token, "Properties do not support modifiers");
-          }
-        }
       |
         ret = MethodDeclaration(modifier)
         {
@@ -1516,7 +1524,7 @@ FieldDeclaration FieldDeclaration(Modifier modifier):
   // Modifiers are already matched in the caller
   type = Type()
         val = VariableDeclarator() { variables.add(val); }
-  ( "," val = VariableDeclarator() { variables.add(val); } )* ";"
+  ( "," val = VariableDeclarator() { variables.add(val); } )* Semicolon()
 
   { 
     int line = modifier.beginLine;
@@ -1540,8 +1548,8 @@ PropertyDeclaration PropertyDeclaration():
   type = Type()
   (<GET>|<SET>|<IDENTIFIER>) { name = token.image; }
   "{" 
-  [ LOOKAHEAD(2) setModifiers = Modifiers() "get" (get = Block()|";")]
-  [ getModifiers = Modifiers () "set" (set = Block()|";")] 
+  [ LOOKAHEAD(2) setModifiers = Modifiers() "get" (get = Block()|Semicolon())]
+  [ getModifiers = Modifiers () "set" (set = Block()|Semicolon())] 
   [ "default" "=" defaultVal = Expression () [";"] ] "}"
 
   {
@@ -1626,7 +1634,7 @@ MethodDeclaration MethodDeclaration(Modifier modifier):
   type = ResultType() { if(line==-1){line=type.getBeginLine(); column=type.getBeginColumn();}}
   name = Name() parameters = FormalParameters() ( "[" "]" { arrayCount++; } )*
   [ "throws" throws_ = NameList() ]
-  ( block = Block() | ";" )
+  ( block = Block() | Semicolon() )
 
   { 
       MethodDeclaration tmp = new MethodDeclaration(line, column, token.endLine, token.endColumn, modifier.modifiers, modifier.annotations, typeParameters, type, null, parameters, arrayCount, throws_, block);
@@ -1737,7 +1745,7 @@ ExplicitConstructorInvocationStmt ExplicitConstructorInvocation():
 	  LOOKAHEAD([ TypeArguments() ] <THIS> "(")
 	  [ typeArgs = TypeArguments() { int[] lineCol=(int[])typeArgs.remove(0); line=lineCol[0]; column=lineCol[1]; } ]
 	  <THIS> { if (line == -1) {line=token.beginLine; column=token.beginColumn;} isThis = true; }
-	  args = Arguments() ";"
+	  args = Arguments() Semicolon()
 	|
 	  [
 	    LOOKAHEAD( PrimaryExpressionWithoutSuperSuffix() "." )
@@ -1746,7 +1754,7 @@ ExplicitConstructorInvocationStmt ExplicitConstructorInvocation():
 	  ]
 	  [ typeArgs = TypeArguments() {int[] lineCol=(int[])typeArgs.remove(0); if (line == -1) {line=lineCol[0]; column=lineCol[1];}} ]
 	  <SUPER> {if (line == -1) {line=token.beginLine; column=token.beginColumn;}}
-	  args = Arguments() ";"
+	  args = Arguments() Semicolon()
   )
   { return new ExplicitConstructorInvocationStmt(line, column, token.endLine, token.endColumn,typeArgs, isThis, expr, args); }
 }
@@ -2700,7 +2708,7 @@ AssertStmt AssertStatement():
 	int column;
 }
 {
-  "assert" {line=token.beginLine; column=token.beginColumn;} check = Expression() [ ":" msg = Expression() ] ";"
+  "assert" {line=token.beginLine; column=token.beginColumn;} check = Expression() [ ":" msg = Expression() ] Semicolon()
   { return new AssertStmt(line, column, token.endLine, token.endColumn,check, msg);  }
 }
 
@@ -2747,7 +2755,7 @@ Statement BlockStatement():
 	  typeDecl = ClassOrInterfaceDeclaration(modifier) { ret = new TypeDeclarationStmt(typeDecl.getBeginLine(), typeDecl.getBeginColumn(), token.endLine, token.endColumn, typeDecl); }
 	|
   	  LOOKAHEAD(VariableDeclarationExpression() )
-	  expr = VariableDeclarationExpression() ";"
+	  expr = VariableDeclarationExpression() Semicolon()
 	  { ret = new ExpressionStmt(expr.getBeginLine(), expr.getBeginColumn(), token.endLine, token.endColumn, expr); } 
     |
 	  ret = Statement()
@@ -2845,7 +2853,7 @@ ExpressionStmt StatementExpression():
 	   }
 	  ]
   )
-  ";"
+  Semicolon()
   { return new ExpressionStmt(expr.getBeginLine(), expr.getBeginColumn(), token.endLine, token.endColumn, expr); }
 }
 
@@ -2930,7 +2938,7 @@ DoStmt DoStatement():
 	int column;
 }
 {
-  "do" {line=token.beginLine; column=token.beginColumn;} body = Statement() "while" "(" condition = Expression() ")" ";"
+  "do" {line=token.beginLine; column=token.beginColumn;} body = Statement() "while" "(" condition = Expression() ")" Semicolon()
   { return new DoStmt(line, column, token.endLine, token.endColumn,body, condition); }
 }
 
@@ -2952,7 +2960,7 @@ Statement ForStatement():
       LOOKAHEAD(VariableDeclarationExpression() ":")
       varExpr = VariableDeclarationExpression() ":" expr = Expression()
     |
-     [ init = ForInit() ] ";" [ expr = Expression() ] ";" [ update = ForUpdate() ]
+     [ init = ForInit() ] Semicolon() [ expr = Expression() ] Semicolon() [ update = ForUpdate() ]
   )
 
   ")" body = Statement()
@@ -3008,7 +3016,7 @@ BreakStmt BreakStatement():
 	int column;
 }
 {
-  "break" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] ";"
+  "break" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] Semicolon()
   { return new BreakStmt(line, column, token.endLine, token.endColumn,id); }
 }
 
@@ -3019,7 +3027,7 @@ ContinueStmt ContinueStatement():
 	int column;
 }
 {
-  "continue" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] ";"
+  "continue" {line=token.beginLine; column=token.beginColumn;} [ (<GET>|<SET>|<IDENTIFIER>) { id = token.image; } ] Semicolon()
   { return new ContinueStmt(line, column, token.endLine, token.endColumn,id); }
 }
 
@@ -3030,7 +3038,7 @@ ReturnStmt ReturnStatement():
 	int column;
 }
 {
-  "return" {line=token.beginLine; column=token.beginColumn;} [ expr = Expression() ] ";"
+  "return" {line=token.beginLine; column=token.beginColumn;} [ expr = Expression() ] Semicolon()
   { return new ReturnStmt(line, column, token.endLine, token.endColumn,expr); }
 }
 
@@ -3041,7 +3049,7 @@ ThrowStmt ThrowStatement():
 	int column;
 }
 {
-  "throw" {line=token.beginLine; column=token.beginColumn;} expr = Expression() ";"
+  "throw" {line=token.beginLine; column=token.beginColumn;} expr = Expression() Semicolon()
   { return new ThrowStmt(line, column, token.endLine, token.endColumn,expr); }
 }
 
@@ -3123,7 +3131,7 @@ List Resources() :
 }
  {
   /*this is a bit more lenient than we need to be, eg allowing access modifiers like private*/
-  var = VariableDeclarationExpression() {vars.add(var);} (LOOKAHEAD(2) ";" var = VariableDeclarationExpression() {vars.add(var);})*
+  var = VariableDeclarationExpression() {vars.add(var);} (LOOKAHEAD(2) Semicolon() var = VariableDeclarationExpression() {vars.add(var);})*
   { return vars; }
 }
 
@@ -3321,7 +3329,7 @@ AnnotationMemberDeclaration AnnotationTypeMemberDeclaration(Modifier modifier):
 	Expression defaultVal = null;
 }
 {
-  type = Type() (<GET>|<SET>|<IDENTIFIER>) { name = token.image; } "(" ")" [ defaultVal = DefaultValue() ] ";"
+  type = Type() (<GET>|<SET>|<IDENTIFIER>) { name = token.image; } "(" ")" [ defaultVal = DefaultValue() ] Semicolon()
 
   {
     int line = modifier.beginLine;

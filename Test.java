@@ -1,18 +1,18 @@
 public class Test
 {
-	public String field = "set";
+	public String field = "set"
 
 	String property
 	{
 		public get
 		{
-			System.out.println ("getting property");
-			return _property;
+			System.out.println ("getting property")
+			return _property
 		}
 		private set
 		{
-			System.out.println ("setting property");
-			_property = value;
+			System.out.println ("setting property")
+			_property = value
 		}
 	}
 
@@ -20,12 +20,12 @@ public class Test
 
 	public static void main (String[] argv)
 	{
-		Test test = new Test ();
-		test.property = "test";
+		Test test = new Test ()
+		test.property = "test"
 
 		test.defaultPropObserver = (oldVal, newVal) ->
-			System.out.println ("DefaultProp changed from "+oldVal+" to "+newVal);
+			System.out.println ("DefaultProp changed from "+oldVal+" to "+newVal)
 
-		test.defaultProp = 1;
+		test.defaultProp = 1
 	}
 }
