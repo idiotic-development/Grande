@@ -1,8 +1,13 @@
 # JavaGrande
-JavaGrande extends the Java programming language to support observable properties. Not only does grande allow you to define new properties, but any api with standard getters and setters can be accessed as if they were a property.
+JavaGrande extends the Java programming language to support additional syntax. The following are supported.
+
+* Observable properties.  
+Not only does grande allow you to define new properties, but any api with standard getters and setters can be accessed as if they were a property.
+* Optional semicolons.  
+Any semicolon followed by a new line can be omitted.
 
 ## How it works
-JavaGrande works by internally converting the property definitions and access into valid java source code then passing it to javac to compile normally.
+JavaGrande works by internally converting the extended syntax into valid java source code then passing it to javac to compile normally.
 
 ## Usage
 
@@ -10,7 +15,24 @@ JavaGrande works by internally converting the property definitions and access in
 
 If the output directory is specified processed source files will be written there. Otherwise source files will be passed to *javac* internally.
 
-## The syntax
+## Running
+
+Clone the repository.
+
+    git clone https://github.com/idiotic-development/JavaGrande.git
+
+Package the Jar.
+
+    buildr package
+
+Run the jar
+
+    java -jar target/JavaGrande-0.0.1.jar -d . *.java
+
+Your class files should now be ready to run.
+
+
+## Properties
 
 ### Basics
 
@@ -91,7 +113,7 @@ The above code would output the following.
 Multiple observers for one property are not supported as the observer is stored in a single field. However the same effect can be achieved by chaining the methods together.
 
     fooObserver = (oldVal, newVal) -> {
-        System.out.println ("Obserber one called");
+        System.out.println ("Observer one called");
     }
     
     fooObserver = new PropertyObserver () {
@@ -102,7 +124,7 @@ Multiple observers for one property are not supported as the observer is stored 
             if (observer != null)
                 observer.changed (oldVal, newVal);
 
-            System.out.println ("Obserber two called");
+            System.out.println ("Observer two called");
         }
     }
 
@@ -112,23 +134,5 @@ Multiple observers for one property are not supported as the observer is stored 
         if (observer != null)
             oldObserver.changed (oldVal, newVal);
 
-        System.out.println ("Obserber three called");
+        System.out.println ("Observer three called");
     }
-
-
-
-## Running
-
-Clone the repository.
-
-    git clone https://github.com/idiotic-development/JavaGrande.git
-
-Package the Jar.
-
-    buildr package
-
-Run the jar
-
-    java -jar target/JavaGrande-0.0.1.jar -d . *.java
-
-Your class files should now be ready to run.
